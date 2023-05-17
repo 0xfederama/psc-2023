@@ -5,6 +5,8 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"math"
+	"sync"
 )
 
 func evalBoolExpr(expression string, values map[string]bool) (bool, error) {
@@ -85,33 +87,66 @@ func (v *visitor) Visit(node ast.Node) ast.Visitor {
 	return nil // Return nil to skip children nodes
 }
 
-func main() {
-	{
-		expression := "a && b || !c"
-		values := map[string]bool{
-			"a": true,
-			"b": false,
-			"c": true,
-		}
+func worker(i int, symbols []string, formula string, result chan map[string]bool, satisfied chan bool, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-		result, err := evalBoolExpr(expression, values)
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-		} else {
-			fmt.Printf("Result: %5v, with values %v\n", result, values)
-		}
+	// Compute the combination
+	values := make(map[string]bool)
+	for j, symbol := range symbols {
+		value := (i>>j)&1 == 1
+		values[symbol] = value
 	}
-	{
-		expression := "a || !a"
-		values := map[string]bool{
-			"a": true,
+
+	// Evaluate the expression on the computed combination of values
+	res, err := evalBoolExpr(formula, values)
+	if err != nil {
+		panic(err)
+	}
+
+	// If the evaluation is true, return the result to the channel
+	if res {
+		satisfied <- true
+        result <- values
+	}
+}
+
+func main() {
+	formulas := []string{
+		"a && !a",
+		"a || !a",
+		"a && b || !c",
+        "a && !b",
+	}
+	symbols := []string{"a", "b", "c"}
+
+	for _, formula := range formulas {
+		// For each combination, eval the expression
+		nCombinations := int(math.Pow(2, float64(len(symbols))))
+
+		result := make(chan map[string]bool)
+		satisfied := make(chan bool)
+		var wg sync.WaitGroup
+
+        // Launch worker threads
+		for i := 0; i < nCombinations; i++ {
+			wg.Add(1)
+			go worker(i, symbols, formula, result, satisfied, &wg)
 		}
 
-		result, err := evalBoolExpr(expression, values)
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
+        // Wait for the workers to finish in a goroutine
+		go func() {
+			wg.Wait()
+			close(result)
+			close(satisfied)
+		}()
+
+        // If the formula is satisfied print the result
+		sat := <-satisfied
+		if sat {
+			resValues := <-result
+			fmt.Printf("%s -> satisfied by %v\n", formula, resValues)
 		} else {
-			fmt.Printf("Result: %5v, with values %v\n", result, values)
+			fmt.Printf("%s -> unsatisfiable\n", formula)
 		}
 	}
 }
