@@ -116,6 +116,7 @@ func main() {
 		"a || !a",
 		"a && b || !c",
         "a && !b",
+        "a && a",
 	}
 	symbols := []string{"a", "b", "c"}
 
@@ -144,9 +145,9 @@ func main() {
 		sat := <-satisfied
 		if sat {
 			resValues := <-result
-			fmt.Printf("%s -> satisfied by %v\n", formula, resValues)
+            fmt.Printf("Formula %s:\n  └─ Satisfied by %v\n", formula, resValues)
 		} else {
-			fmt.Printf("%s -> unsatisfiable\n", formula)
+            fmt.Printf("Formula %s:\n  └─ Unsatisfiable\n", formula)
 		}
 	}
 }
