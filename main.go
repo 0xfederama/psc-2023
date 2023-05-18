@@ -145,9 +145,11 @@ func main() {
 		sat := <-satisfied
 		if sat {
 			resValues := <-result
-            fmt.Printf("Formula %s:\n  └─ Satisfied by %v\n", formula, resValues)
+            fmt.Printf("\033[97;1m%s\033[0m:\n", formula)
+            fmt.Printf("  └─ \033[32msatisfied\033[0m by %v\n", resValues)
 		} else {
-            fmt.Printf("Formula %s:\n  └─ Unsatisfiable\n", formula)
+            fmt.Printf("\033[97;1m%s\033[0m:\n", formula)
+            fmt.Printf("  └─ \033[31munsatisfiable\033[0m\n")
 		}
 	}
 }
