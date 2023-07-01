@@ -117,6 +117,7 @@ func main() {
 		"a && b || !c",
         "a && !b",
         "a && a",
+        "a || b || !b",
 	}
 	symbols := []string{"a", "b", "c"}
 
